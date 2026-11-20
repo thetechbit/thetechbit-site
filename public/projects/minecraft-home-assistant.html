@@ -39,6 +39,7 @@
       </ul>
 
       <h2 id="prerequisites">Prerequisites</h2>
+      <div class="summary">The following must already be in place before following this guide.</div>
       <ul>
         <li>A Minecraft server running in Docker with the <strong>itzg/minecraft-server</strong> image.</li>
         <li>OliveTin running in Docker, on the same host or a separate one.</li>
@@ -49,13 +50,13 @@
       </ul>
 
       <h2 id="flow">System flow</h2>
-      <p>Pressing a dashboard button triggers a chain: Home Assistant script, then the OliveTin API, then SSH to the Ubuntu server, then the bash script, then an RCON command to the Minecraft server.</p>
+      <div class="summary">Pressing a dashboard button triggers a chain: Home Assistant script, then the OliveTin API, then SSH to the Ubuntu server, then the bash script, then an RCON command to the Minecraft server.</div>
       <!-- Optional: add your flowchart image at public/images/mc-flow.png, then uncomment:
       <p><img src="/images/mc-flow.png" alt="Flowchart of the command path from Home Assistant to Minecraft" style="max-width:100%"></p>
       -->
 
       <h2 id="rcon">Enable RCON on the Minecraft container</h2>
-      <p>RCON is a remote console protocol built into Minecraft that lets you send commands programmatically. Enable it and bind it to localhost only.</p>
+      <div class="summary">RCON is a remote console protocol built into Minecraft that allows commands to be sent to the server programmatically. It must be enabled and bound to localhost only for security.</div>
       <div class="callout warning">Binding RCON to <code>127.0.0.1</code> keeps it reachable only from the host itself, never from your LAN or the internet. RCON sends plaintext, has no encryption, and is vulnerable to brute-force attacks, so never expose it.</div>
       <h3>Update your docker-compose.yaml:</h3>
       <p>Open <code>/home/containers/minecraft-server/docker-compose.yaml</code> and add:</p>
@@ -74,7 +75,7 @@
 docker compose down &amp;&amp; docker compose up -d</code></pre>
 
       <h2 id="env">Create the .env file</h2>
-      <p>Store the RCON password in a <code>.env</code> file next to <code>docker-compose.yaml</code>. Docker Compose reads it automatically, so the password lives in one place.</p>
+      <div class="summary">The RCON password is stored in a <code>.env</code> file in the same directory as the <code>docker-compose.yaml</code>. Docker Compose automatically reads this file, so the password only needs to be defined in one place. The file permissions are locked down so only the owner can read it.</div>
 <h3>Create and secure the .env file:</h3>
 <pre><code>nano /home/containers/minecraft-server/.env</code></pre>
       <p>Add the password in single quotes so special characters are safe:</p>
@@ -88,7 +89,7 @@ ls -la /home/containers/minecraft-server/.env</code></pre>
       <div class="callout info"><code>-rw-------</code> means only the owner can read or write the file. That's correct.</div>
 
       <h2 id="script">Create the bash script</h2>
-      <p>One script handles every item-giving command. It takes the item, amount, and player as arguments, strips unexpected characters, and sends the command over RCON.</p>
+      <div class="summary">A single bash script on the Ubuntu server handles all item-giving commands. It accepts the item name, amount, and player name as arguments, sanitizes the input, and sends the command to the Minecraft server via RCON.</div>
 <h3>Create the script:</h3>
 <pre><code>nano /home/youruser/scripts/mc-give.sh</code></pre>
 <pre><code>#!/bin/bash
@@ -105,7 +106,7 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
 <pre><code>chmod +x /home/youruser/scripts/mc-give.sh</code></pre>
 
       <h2 id="olivetin">Configure OliveTin</h2>
-      <p>OliveTin gets a single action that accepts item, amount, and player. It connects to the Ubuntu server over SSH and runs the script. The <code>ascii_identifier</code> type limits input to alphanumeric characters and underscores.</p>
+      <div class="summary">OliveTin is configured with a single action that accepts item, amount, and player as arguments. It connects to the Ubuntu Server via SSH and runs the bash script with those arguments. Input is validated using the <code>ascii_identifier</code> type which restricts input to alphanumeric characters and underscores.</div>
       <h3>Add the action to OliveTin's config.yaml:</h3>
       <p>Open your OliveTin <code>config.yaml</code> and add the following action:</p>
 <pre><code>actions:
@@ -132,8 +133,9 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
 <pre><code>docker restart olivetin</code></pre>
 
       <h2 id="rest">Create the Home Assistant REST command</h2>
-      <p>A REST command calls the OliveTin API and passes the item, amount, and player in the payload. Add it to <code>configuration.yaml</code>, or to <code>rest_commands.yaml</code> if you include that file.</p>
+      <div class="summary">A REST command in Home Assistant is used to call the OliveTin API, passing the item, amount, and player as dynamic arguments in the payload.</div>
 <h3>Add the REST command to Home Assistant:</h3>
+<p>Open your Home Assistant <code>configuration.yaml</code> (or <code>rest_commands.yaml</code> if defined in the <code>configuration.yaml</code>) and add the following:</p>
 <pre><code>rest_command:
   mc_give_item:
     url: "http://YOUR_OLIVETIN_IP:1337/api/StartAction"
@@ -154,7 +156,7 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
       <p>Reload the configuration or restart Home Assistant.</p>
 
       <h2 id="ha-script">Create the Home Assistant script</h2>
-      <p>One reusable script with item, amount, and player fields calls the REST command, so you need only one script no matter how many buttons you add.</p>
+      <div class="summary">A single reusable Home Assistant script with fields for item, amount, and player is used to call the REST command. This means only one script is needed regardless of how many different items or dashboard buttons you have.</div>
       <h3>Add the script to scripts.yaml:</h3>
       <div class="callout info"><code>scripts.yaml</code> must be declared in <code>configuration.yaml</code> as <code>script: !include scripts.yaml</code>.</div>
 <pre><code>mc_give_item:
@@ -179,7 +181,7 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
       <p>Reload scripts in Home Assistant.</p>
 
       <h2 id="dashboard">Set up the dashboard</h2>
-      <p>The dashboard uses Mushroom Template Cards with Minecraft item images as buttons. Each button calls the same <code>mc_give_item</code> script with different values, and each group of items is its own card.</p>
+      <div class="summary">The dashboard uses Mushroom Template Cards with custom Minecraft item images as buttons. Each button calls the single <code>mc_give_item</code> script with different item and amount values. Items are grouped into sections, each as a separate card on the dashboard.</div>
       <div class="callout info">Item images come from the Minecraft Wiki and live in <code>/config/www/minecraft/Icons/</code> on your Home Assistant host. Files in <code>/config/www/</code> are served at <code>/local/</code>.</div>
       <h3>Download the item images:</h3>
 <pre><code>mkdir -p /config/www/minecraft/Icons/Tools
