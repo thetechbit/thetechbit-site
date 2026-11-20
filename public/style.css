@@ -162,3 +162,14 @@ h3 { margin-top: 1.75rem; }
 main ul { padding-left: 1.4rem; }
 main li { margin: 0.3rem 0; }
 html { scroll-behavior: smooth; }
+
+/* More space between sections */
+.panel h2 {
+  margin-top: 3.5rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+}
+
+.panel h3 {
+  margin-top: 2.25rem;
+}
