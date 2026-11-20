@@ -143,3 +143,22 @@ pre code { border: 0; padding: 0; background: none; }
   .panel { padding: 1.25rem; }
   .site-nav a { margin-left: 0.9rem; }
 }
+
+/* Callouts */
+.callout {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: #161616;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.callout.warning { border-left-color: #d9a441; }
+.callout.success { border-left-color: #4caf7a; }
+
+h3 { margin-top: 1.75rem; }
+main ul { padding-left: 1.4rem; }
+main li { margin: 0.3rem 0; }
+html { scroll-behavior: smooth; }
