@@ -57,6 +57,7 @@
       <h2 id="rcon">Enable RCON on the Minecraft container</h2>
       <p>RCON is a remote console protocol built into Minecraft that lets you send commands programmatically. Enable it and bind it to localhost only.</p>
       <div class="callout warning">Binding RCON to <code>127.0.0.1</code> keeps it reachable only from the host itself, never from your LAN or the internet. RCON sends plaintext, has no encryption, and is vulnerable to brute-force attacks, so never expose it.</div>
+      <h3>Update your docker-compose.yaml:</h3>
       <p>Open <code>/home/containers/minecraft-server/docker-compose.yaml</code> and add:</p>
 <pre><code>services:
   minecraft-server:
@@ -74,6 +75,7 @@ docker compose down &amp;&amp; docker compose up -d</code></pre>
 
       <h2 id="env">Create the .env file</h2>
       <p>Store the RCON password in a <code>.env</code> file next to <code>docker-compose.yaml</code>. Docker Compose reads it automatically, so the password lives in one place.</p>
+<h3>Create and secure the .env file:</h3>
 <pre><code>nano /home/containers/minecraft-server/.env</code></pre>
       <p>Add the password in single quotes so special characters are safe:</p>
 <pre><code>RCON_PASSWORD='yourpassword'</code></pre>
@@ -87,6 +89,7 @@ ls -la /home/containers/minecraft-server/.env</code></pre>
 
       <h2 id="script">Create the bash script</h2>
       <p>One script handles every item-giving command. It takes the item, amount, and player as arguments, strips unexpected characters, and sends the command over RCON.</p>
+<h3>Create the script:</h3>
 <pre><code>nano /home/youruser/scripts/mc-give.sh</code></pre>
 <pre><code>#!/bin/bash
 source /home/containers/minecraft-server/.env
@@ -103,7 +106,8 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
 
       <h2 id="olivetin">Configure OliveTin</h2>
       <p>OliveTin gets a single action that accepts item, amount, and player. It connects to the Ubuntu server over SSH and runs the script. The <code>ascii_identifier</code> type limits input to alphanumeric characters and underscores.</p>
-      <p>Add this to OliveTin's <code>config.yaml</code>:</p>
+      <h3>Add the action to OliveTin's config.yaml:</h3>
+      <p>Open your OliveTin <code>config.yaml</code> and add the following action:</p>
 <pre><code>actions:
   - id: mc-give
     title: Give Minecraft Items
@@ -129,6 +133,7 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
 
       <h2 id="rest">Create the Home Assistant REST command</h2>
       <p>A REST command calls the OliveTin API and passes the item, amount, and player in the payload. Add it to <code>configuration.yaml</code>, or to <code>rest_commands.yaml</code> if you include that file.</p>
+<h3>Add the REST command to Home Assistant:</h3>
 <pre><code>rest_command:
   mc_give_item:
     url: "http://YOUR_OLIVETIN_IP:1337/api/StartAction"
@@ -150,6 +155,7 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
 
       <h2 id="ha-script">Create the Home Assistant script</h2>
       <p>One reusable script with item, amount, and player fields calls the REST command, so you need only one script no matter how many buttons you add.</p>
+      <h3>Add the script to scripts.yaml:</h3>
       <div class="callout info"><code>scripts.yaml</code> must be declared in <code>configuration.yaml</code> as <code>script: !include scripts.yaml</code>.</div>
 <pre><code>mc_give_item:
   alias: "MC - Give Item"
@@ -175,7 +181,7 @@ docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER 
       <h2 id="dashboard">Set up the dashboard</h2>
       <p>The dashboard uses Mushroom Template Cards with Minecraft item images as buttons. Each button calls the same <code>mc_give_item</code> script with different values, and each group of items is its own card.</p>
       <div class="callout info">Item images come from the Minecraft Wiki and live in <code>/config/www/minecraft/Icons/</code> on your Home Assistant host. Files in <code>/config/www/</code> are served at <code>/local/</code>.</div>
-      <h3>Download the item images</h3>
+      <h3>Download the item images:</h3>
 <pre><code>mkdir -p /config/www/minecraft/Icons/Tools
 mkdir -p /config/www/minecraft/Icons/Armor
 mkdir -p /config/www/minecraft/Icons/Bricks\ -\ Planks\ -\ Raw
@@ -190,7 +196,7 @@ mkdir -p /config/www/minecraft/Icons/Transport</code></pre>
       <p>Put each image in the matching subfolder, then confirm it loads in your browser:</p>
 <pre><code>http://YOUR_HA_IP:8123/local/minecraft/Icons/Tools/Netherite%20Sword.png</code></pre>
       <div class="callout warning">File names with spaces must be URL encoded in the dashboard config: <code>Netherite Sword.png</code> becomes <code>Netherite%20Sword.png</code>.</div>
-      <h3>Add the dashboard cards</h3>
+      <h3>Add the dashboard cards:</h3>
       <p>Add each section as its own <code>vertical-stack</code> card. Use the <code>picture</code> field for local image paths; <code>icon</code> is only for <code>mdi:</code> icons. Separate cards let you reorder sections and add spacing cards between them.</p>
 <pre><code>type: vertical-stack
 cards:
