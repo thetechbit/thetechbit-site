@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Minecraft Commands from Home Assistant | The Tech Bit</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="inner">
+      <a class="site-title" href="/">The Tech Bit</a>
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/projects/">Projects</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="breadcrumb">
+      <a href="/">Home</a> / <a href="/projects/">Projects</a> / Minecraft Commands from Home Assistant
+    </div>
+    <div class="panel">
+      <h1>Minecraft Commands from Home Assistant</h1>
+      <p class="lead">Send Minecraft server commands, like giving items to players, from a Home Assistant dashboard using OliveTin and a bash script. Mushroom Cards act as buttons with custom Minecraft item images.</p>
+
+      <h2 id="contents">Contents</h2>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#flow">System flow</a></li>
+        <li><a href="#rcon">Enable RCON on the Minecraft container</a></li>
+        <li><a href="#env">Create the .env file</a></li>
+        <li><a href="#script">Create the bash script</a></li>
+        <li><a href="#olivetin">Configure OliveTin</a></li>
+        <li><a href="#rest">Create the Home Assistant REST command</a></li>
+        <li><a href="#ha-script">Create the Home Assistant script</a></li>
+        <li><a href="#dashboard">Set up the dashboard</a></li>
+      </ul>
+
+      <h2 id="prerequisites">Prerequisites</h2>
+      <ul>
+        <li>A Minecraft server running in Docker with the <strong>itzg/minecraft-server</strong> image.</li>
+        <li>OliveTin running in Docker, on the same host or a separate one.</li>
+        <li>SSH key access from OliveTin to the system hosting the Minecraft server.</li>
+        <li>Home Assistant running and reachable on your network.</li>
+        <li><strong>Mushroom Cards</strong> and <strong>card-mod</strong> installed in Home Assistant through HACS.</li>
+        <li>SSH access to your Ubuntu server.</li>
+      </ul>
+
+      <h2 id="flow">System flow</h2>
+      <p>Pressing a dashboard button triggers a chain: Home Assistant script, then the OliveTin API, then SSH to the Ubuntu server, then the bash script, then an RCON command to the Minecraft server.</p>
+      <!-- Optional: add your flowchart image at public/images/mc-flow.png, then uncomment:
+      <p><img src="/images/mc-flow.png" alt="Flowchart of the command path from Home Assistant to Minecraft" style="max-width:100%"></p>
+      -->
+
+      <h2 id="rcon">Enable RCON on the Minecraft container</h2>
+      <p>RCON is a remote console protocol built into Minecraft that lets you send commands programmatically. Enable it and bind it to localhost only.</p>
+      <div class="callout warning">Binding RCON to <code>127.0.0.1</code> keeps it reachable only from the host itself, never from your LAN or the internet. RCON sends plaintext, has no encryption, and is vulnerable to brute-force attacks, so never expose it.</div>
+      <p>Open <code>/home/containers/minecraft-server/docker-compose.yaml</code> and add:</p>
+<pre><code>services:
+  minecraft-server:
+    env_file:
+      - .env
+    environment:
+      ENABLE_RCON: "true"
+      RCON_PORT: 25575
+      RCON_PASSWORD: ${RCON_PASSWORD}
+    ports:
+      - "127.0.0.1:25575:25575"</code></pre>
+      <p>Restart the container:</p>
+<pre><code>cd /home/containers/minecraft-server
+docker compose down &amp;&amp; docker compose up -d</code></pre>
+
+      <h2 id="env">Create the .env file</h2>
+      <p>Store the RCON password in a <code>.env</code> file next to <code>docker-compose.yaml</code>. Docker Compose reads it automatically, so the password lives in one place.</p>
+<pre><code>nano /home/containers/minecraft-server/.env</code></pre>
+      <p>Add the password in single quotes so special characters are safe:</p>
+<pre><code>RCON_PASSWORD='yourpassword'</code></pre>
+      <div class="callout warning">Always use single quotes. They stop bash from interpreting characters like <code>$</code>, <code>!</code>, and <code>@</code>. The one character you can't use inside them is a single quote.</div>
+      <p>Lock down the permissions and verify:</p>
+<pre><code>chmod 600 /home/containers/minecraft-server/.env
+ls -la /home/containers/minecraft-server/.env</code></pre>
+      <p>Expected output:</p>
+<pre><code>-rw------- 1 youruser youruser 67 Apr 21 10:38 .env</code></pre>
+      <div class="callout info"><code>-rw-------</code> means only the owner can read or write the file. That's correct.</div>
+
+      <h2 id="script">Create the bash script</h2>
+      <p>One script handles every item-giving command. It takes the item, amount, and player as arguments, strips unexpected characters, and sends the command over RCON.</p>
+<pre><code>nano /home/youruser/scripts/mc-give.sh</code></pre>
+<pre><code>#!/bin/bash
+source /home/containers/minecraft-server/.env
+
+ITEM=$(echo "$1" | tr -cd '[:alnum:]_')     # Only allow alphanumeric and underscores
+AMOUNT=$(echo "$2" | tr -cd '[:digit:]')     # Only allow numbers
+PLAYER=$(echo "$3" | tr -cd '[:alnum:]_')    # Only allow alphanumeric and underscores
+PLAYER=${PLAYER:-YOUR_PLAYER}                # Default player if not provided
+
+docker exec minecraft-server rcon-cli --password "$RCON_PASSWORD" "give $PLAYER minecraft:$ITEM $AMOUNT"</code></pre>
+      <div class="callout info">The <code>tr -cd</code> commands remove any character that isn't alphanumeric or an underscore, so unexpected input never reaches the server.</div>
+      <p>Make it executable:</p>
+<pre><code>chmod +x /home/youruser/scripts/mc-give.sh</code></pre>
+
+      <h2 id="olivetin">Configure OliveTin</h2>
+      <p>OliveTin gets a single action that accepts item, amount, and player. It connects to the Ubuntu server over SSH and runs the script. The <code>ascii_identifier</code> type limits input to alphanumeric characters and underscores.</p>
+      <p>Add this to OliveTin's <code>config.yaml</code>:</p>
+<pre><code>actions:
+  - id: mc-give
+    title: Give Minecraft Items
+    shell: ssh user@YOUR_SERVER_IP '/home/youruser/scripts/mc-give.sh {{ item }} {{ amount }} {{ player }}'
+    arguments:
+      - name: item
+        title: Item
+        type: ascii_identifier
+      - name: amount
+        title: Amount
+        type: int
+      - name: player
+        title: Player
+        type: ascii_identifier
+        default: YOUR_PLAYER
+    maxConcurrent: 1
+    timeout: 120
+    icon: restart
+    popupOnStart: execution-dialog-stdout-only</code></pre>
+      <div class="callout info"><code>maxConcurrent: 1</code> prevents duplicate commands from firing at once. <code>ascii_identifier</code> matches valid Minecraft item IDs and usernames.</div>
+      <p>Restart OliveTin:</p>
+<pre><code>docker restart olivetin</code></pre>
+
+      <h2 id="rest">Create the Home Assistant REST command</h2>
+      <p>A REST command calls the OliveTin API and passes the item, amount, and player in the payload. Add it to <code>configuration.yaml</code>, or to <code>rest_commands.yaml</code> if you include that file.</p>
+<pre><code>rest_command:
+  mc_give_item:
+    url: "http://YOUR_OLIVETIN_IP:1337/api/StartAction"
+    method: POST
+    headers:
+      Content-Type: application/json
+    payload: &gt;
+      {
+        "bindingId": "mc-give",
+        "arguments": [
+          { "name": "item", "value": "{{ item }}" },
+          { "name": "amount", "value": "{{ amount }}" },
+          { "name": "player", "value": "{{ player }}" }
+        ]
+      }</code></pre>
+      <div class="callout info">Replace <code>YOUR_OLIVETIN_IP</code> with your OliveTin host's address. The Jinja2 variables are filled in at runtime by whatever calls the command.</div>
+      <div class="callout info">If <code>configuration.yaml</code> contains <code>rest_command: !include rest_commands.yaml</code>, leave out the <code>rest_command:</code> line above.</div>
+      <p>Reload the configuration or restart Home Assistant.</p>
+
+      <h2 id="ha-script">Create the Home Assistant script</h2>
+      <p>One reusable script with item, amount, and player fields calls the REST command, so you need only one script no matter how many buttons you add.</p>
+      <div class="callout info"><code>scripts.yaml</code> must be declared in <code>configuration.yaml</code> as <code>script: !include scripts.yaml</code>.</div>
+<pre><code>mc_give_item:
+  alias: "MC - Give Item"
+  fields:
+    item:
+      description: "Minecraft item name"
+      example: "diamond_sword"
+    amount:
+      description: "Amount to give"
+      example: "10"
+    player:
+      description: "Player name"
+      default: "YOUR_PLAYER"
+      example: "YOUR_PLAYER"
+  sequence:
+    - action: rest_command.mc_give_item
+      data:
+        item: "{{ item }}"
+        amount: "{{ amount }}"
+        player: "{{ player | default('YOUR_PLAYER') }}"</code></pre>
+      <p>Reload scripts in Home Assistant.</p>
+
+      <h2 id="dashboard">Set up the dashboard</h2>
+      <p>The dashboard uses Mushroom Template Cards with Minecraft item images as buttons. Each button calls the same <code>mc_give_item</code> script with different values, and each group of items is its own card.</p>
+      <div class="callout info">Item images come from the Minecraft Wiki and live in <code>/config/www/minecraft/Icons/</code> on your Home Assistant host. Files in <code>/config/www/</code> are served at <code>/local/</code>.</div>
+      <h3>Download the item images</h3>
+<pre><code>mkdir -p /config/www/minecraft/Icons/Tools
+mkdir -p /config/www/minecraft/Icons/Armor
+mkdir -p /config/www/minecraft/Icons/Bricks\ -\ Planks\ -\ Raw
+mkdir -p /config/www/minecraft/Icons/Decor
+mkdir -p /config/www/minecraft/Icons/Doors
+mkdir -p /config/www/minecraft/Icons/Fence
+mkdir -p /config/www/minecraft/Icons/Fire\ -\ Light
+mkdir -p /config/www/minecraft/Icons/Food
+mkdir -p /config/www/minecraft/Icons/Seeds
+mkdir -p /config/www/minecraft/Icons/Range\ Weapons
+mkdir -p /config/www/minecraft/Icons/Transport</code></pre>
+      <p>Put each image in the matching subfolder, then confirm it loads in your browser:</p>
+<pre><code>http://YOUR_HA_IP:8123/local/minecraft/Icons/Tools/Netherite%20Sword.png</code></pre>
+      <div class="callout warning">File names with spaces must be URL encoded in the dashboard config: <code>Netherite Sword.png</code> becomes <code>Netherite%20Sword.png</code>.</div>
+      <h3>Add the dashboard cards</h3>
+      <p>Add each section as its own <code>vertical-stack</code> card. Use the <code>picture</code> field for local image paths; <code>icon</code> is only for <code>mdi:</code> icons. Separate cards let you reorder sections and add spacing cards between them.</p>
+<pre><code>type: vertical-stack
+cards:
+  - type: markdown
+    content: "## 🗂️ Section Title"
+  - type: grid
+    columns: 2
+    square: false
+    cards:
+      - type: custom:mushroom-template-card
+        primary: Item Name
+        secondary: x1
+        picture: /local/minecraft/Icons/SubFolder/Item%20Name.png
+        tap_action:
+          action: perform-action
+          perform_action: script.mc_give_item
+          data:
+            item: item_id
+            amount: 1</code></pre>
+      <p>For spacing between sections, add this markdown card:</p>
+<pre><code>type: markdown
+content: " "
+text_only: true
+card_mod:
+  style: |
+    ha-card {
+      padding-top: 20px;
+      padding-bottom: 20px;
+      box-shadow: none;
+      background: none;
+    }</code></pre>
+      <div class="callout success">That's the full setup. Tapping a dashboard button runs the Home Assistant script, which calls OliveTin, which SSHs into the server, which runs the bash script, which sends the RCON command to Minecraft, all within a few seconds.</div>
+    </div>
+  </main>
+
+  <footer class="site-footer">© The Tech Bit</footer>
+</body>
+</html>
