@@ -1,18 +1,29 @@
+/* ==========================================================
+   The Tech Bit: dark theme
+   Colors live here. Change a value once and it updates everywhere.
+   ========================================================== */
 :root {
   --bg: #111111;
   --panel: #1c1c1c;
   --panel-hover: #242424;
   --border: #2e2e2e;
-  --text: #f0f0f0;
-  --muted: #9a9a9a;
-  --accent: #3f8fd2;
+  --code-bg: #0c0c0c;
+  --text: #f0f0f0;       /* all regular text */
+  --muted: #b3b3b3;      /* breadcrumb, footer, card descriptions */
+  --accent: #3f8fd2;     /* links and headings */
   --accent-dark: #206ea7;
+  --warning: #d9a441;
+  --success: #4caf7a;
   --radius: 6px;
 }
 
+/* ---------- Base ---------- */
 * { box-sizing: border-box; }
 
-html { color-scheme: dark; }
+html {
+  color-scheme: dark;
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
@@ -26,7 +37,34 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* Header bar */
+/* ---------- Headings ---------- */
+h1, h2, h3 { line-height: 1.3; }
+
+h1 {
+  margin-top: 0;
+  font-size: 2rem;
+}
+
+h2 {
+  margin: 3.5rem 0 1rem;
+  padding-bottom: 0.6rem;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+
+h3 {
+  margin: 2.25rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.lead { font-size: 1.1rem; }
+
+/* ---------- Lists ---------- */
+main ul { padding-left: 1.4rem; }
+main li { margin: 0.3rem 0; }
+
+/* ---------- Header bar ---------- */
 .site-header {
   background: var(--accent-dark);
   border-bottom: 1px solid rgba(0, 0, 0, 0.4);
@@ -56,7 +94,7 @@ a:hover { text-decoration: underline; }
 }
 .site-nav a:hover { color: #fff; text-decoration: none; }
 
-/* Page layout */
+/* ---------- Page layout ---------- */
 main {
   max-width: 960px;
   margin: 2rem auto;
@@ -76,18 +114,15 @@ main {
   padding: 2rem;
 }
 
-h1, h2, h3 { line-height: 1.3; }
-h1 { margin-top: 0; font-size: 2rem; }
-h2 {
-  margin-top: 2rem;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid var(--border);
+.site-footer {
+  max-width: 960px;
+  margin: 3rem auto 2rem;
+  padding: 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
-p { color: var(--text); }
-.lead { color: var(--muted); font-size: 1.1rem; }
-
-/* Project cards */
+/* ---------- Project cards ---------- */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -110,41 +145,18 @@ p { color: var(--text); }
   border-left-color: var(--accent);
   text-decoration: none;
 }
-.card h3 { margin: 0 0 0.4rem; color: var(--accent); }
-.card p { margin: 0; color: var(--muted); font-size: 0.95rem; }
-
-/* Code */
-code {
-  background: #0c0c0c;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.1em 0.4em;
-  font-size: 0.9em;
+.card h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  color: var(--accent);
 }
-pre {
-  background: #0c0c0c;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
-  overflow-x: auto;
-}
-pre code { border: 0; padding: 0; background: none; }
-
-/* Footer */
-.site-footer {
-  max-width: 960px;
-  margin: 3rem auto 2rem;
-  padding: 0 1.25rem;
+.card p {
+  margin: 0;
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 
-@media (max-width: 600px) {
-  .panel { padding: 1.25rem; }
-  .site-nav a { margin-left: 0.9rem; }
-}
-
-/* Callouts */
+/* ---------- Callouts ---------- */
 .callout {
   margin: 1rem 0;
   padding: 0.75rem 1rem;
@@ -152,43 +164,31 @@ pre code { border: 0; padding: 0; background: none; }
   border: 1px solid var(--border);
   border-left: 4px solid var(--accent);
   border-radius: var(--radius);
-  color: var(--muted);
   font-size: 0.95rem;
 }
-.callout.warning { border-left-color: #d9a441; }
-.callout.success { border-left-color: #4caf7a; }
+.callout.warning { border-left-color: var(--warning); }
+.callout.success { border-left-color: var(--success); }
 
-h3 { margin-top: 1.75rem; }
-main ul { padding-left: 1.4rem; }
-main li { margin: 0.3rem 0; }
-html { scroll-behavior: smooth; }
-
-/* More space between sections */
-.panel h2 {
-  margin-top: 3.5rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.6rem;
+/* ---------- Code ---------- */
+code {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  font-size: 0.9em;
 }
 
-.panel h3 {
-  margin-top: 2.25rem;
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  overflow-x: auto;
 }
+pre code { border: 0; padding: 0; background: none; }
 
-/* Section headings (h2) in blue */
-.panel h2 {
-  color: var(--accent);
-}
-
-/* Smaller sub-headings (h3) */
-.panel h3 {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-/* Body text color */
-.panel p,
-.panel li,
-.panel .lead {
-  color: #f0f0f0;
+/* ---------- Small screens ---------- */
+@media (max-width: 600px) {
+  .panel { padding: 1.25rem; }
+  .site-nav a { margin-left: 0.9rem; }
 }
