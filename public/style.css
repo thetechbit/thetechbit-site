@@ -3,7 +3,7 @@
   --panel: #1c1c1c;
   --panel-hover: #242424;
   --border: #2e2e2e;
-  --text: #ebebeb;
+  --text: #f0f0f0;
   --muted: #9a9a9a;
   --accent: #3f8fd2;
   --accent-dark: #206ea7;
@@ -184,4 +184,11 @@ html { scroll-behavior: smooth; }
   font-size: 1rem;
   font-weight: 600;
   color: var(--text);
+}
+
+/* Body text color */
+.panel p,
+.panel li,
+.panel .lead {
+  color: #f0f0f0;
 }
