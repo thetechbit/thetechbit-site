@@ -173,3 +173,15 @@ html { scroll-behavior: smooth; }
 .panel h3 {
   margin-top: 2.25rem;
 }
+
+/* Section headings (h2) in blue */
+.panel h2 {
+  color: var(--accent);
+}
+
+/* Smaller sub-headings (h3) */
+.panel h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
