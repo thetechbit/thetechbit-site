@@ -3,14 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>My Site</title>
+  <title>Projects | The Tech Bit</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <nav>
-    <a href="/">Home</a>
-    <a href="/projects/">Projects</a>
-  </nav>
-  <p>This is my homepage.</p>
+  <header class="site-header">
+    <div class="inner">
+      <a class="site-title" href="/">The Tech Bit</a>
+      <nav class="site-nav">
+        <a href="/">Home</a>
+        <a href="/projects/">Projects</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <div class="breadcrumb"><a href="/">Home</a> / Projects</div>
+    <h1>Projects</h1>
+    <p class="lead">Things I've built and written about.</p>
+
+    <div class="card-grid">
+      <a class="card" href="/projects/project-one">
+        <h3>Project One</h3>
+        <p>A one-line description of this project.</p>
+      </a>
+    </div>
+  </main>
+
+  <footer class="site-footer">© The Tech Bit</footer>
 </body>
 </html>
